@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Keyword Finder Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #1F2937;
+        }
+
+        /* Highlight Colors */
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #7c3aed;
+            --accent-color: #db2777;
+        }
+        
+        /* Loader Styles */
+        .loader-container {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            display: none;
+            z-index: 10001;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            max-width: 90%;
+            text-align: center;
+        }
+        .notification.show {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .notification.success { background-color: #22c55e; }
+        .notification.error { background-color: #ef4444; }
+        .notification.wait { background-color: #3b82f6; }
+
+        /* Button Colors */
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-primary:hover { background-color: #6366f1; }
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-secondary:hover { background-color: #8b5cf6; }
+        .btn-accent { background-color: var(--accent-color); }
+        .btn-accent:hover { background-color: #e11d48; }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+        }
+        .modal-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 600px;
+            z-index: 9999;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* Keyword Finder Specific Styles */
+        #keyword-finder-resultsTableContainer::-webkit-scrollbar {
+            height: 8px;
+        }
+        #keyword-finder-resultsTableContainer::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        #keyword-finder-resultsTableContainer::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 4px;
+        }
+        .custom-checkbox {
+            color: var(--secondary-color);
+        }
+        .custom-checkbox:focus {
+            --tw-ring-color: var(--secondary-color);
+        }
+        .sortable-header {
+            cursor: pointer;
+        }
+        .sortable-header:hover {
+            background-color: #f0f0f0;
+        }
+        .sort-icon {
+            display: inline-block;
+            margin-left: 5px;
+            opacity: 0.5;
+            width: 1em;
+        }
+        /* Custom Searchable Dropdown */
+        .searchable-dropdown {
+            position: relative;
+        }
+        .searchable-dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #d1d5db;
+            background-color: white;
+            z-index: 100;
+            border-radius: 0 0 0.375rem 0.375rem;
+        }
+        .searchable-dropdown-list div {
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        .searchable-dropdown-list div:hover {
+            background-color: #f3f4f6;
+        }
+        .filter-dropdown-content {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .pagination-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        /* Stylish Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="loader" class="loader-container">
+        <div class="loader"></div>
+        <p id="loader-text" class="mt-4 text-lg text-gray-700 font-semibold"></p>
+    </div>
+    <div id="notification" class="notification"></div>
+    
+    <div id="modal-overlay" class="modal-overlay"></div>
+    <div id="modal-container" class="modal-container">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="modal-title" class="text-2xl font-bold">Modal Title</h3>
+            <button id="modal-close-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+        </div>
+        <div id="modal-content" class="modal-content"></div>
+    </div>
+
+
+    <header class="bg-white shadow-sm p-4 flex justify-between items-center border-b border-gray-200">
+        <div class="flex items-center">
+            <svg class="w-8 h-8 mr-2" style="color: var(--primary-color);" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <h1 class="text-2xl font-bold text-gray-900">Advanced Keyword Finder</h1>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-8">
+        <div id="keyword-finder-app" class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <div id="keyword-finder-inputSection">
+                <h2 class="text-2xl font-semibold mb-2 text-gray-900">Find key words</h2>
+                <p class="text-gray-600 mb-6">Provide a keyword and select your criteria to generate detailed insights.</p>
+                <div class="mb-4">
+                     <label for="keyword-finder-seedKeyword" class="block text-sm font-medium text-gray-700 mb-1">Seed Keyword</label>
+                     <input type="text" id="keyword-finder-seedKeyword" class="w-full p-3 border rounded bg-white border-gray-300 focus:ring-2 focus:ring-[var(--secondary-color)] focus:border-[var(--secondary-color)] text-lg" placeholder="e.g., sustainable fashion">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                     <div>
+                         <label class="block text-sm font-medium text-gray-700 mb-1">SEO Type</label>
+                         <div class="flex items-center space-x-4">
+                              <label><input type="radio" name="seo-type" value="global" checked class="mr-1 custom-checkbox"> Global</label>
+                              <label><input type="radio" name="seo-type" value="local" class="mr-1 custom-checkbox"> Local</label>
+                         </div>
+                     </div>
+                     <div>
+                         <label for="keyword-finder-selectIntent" class="block text-sm font-medium text-gray-700 mb-1">Select Intent</label>
+                         <select id="keyword-finder-selectIntent" class="w-full p-2 border rounded bg-white border-gray-300">
+                             <option>Any Intent</option>
+                             <option>Informational</option>
+                             <option>Navigational</option>
+                             <option>Commercial</option>
+                             <option>Transactional</option>
+                         </select>
+                     </div>
+                     <div>
+                         <label for="keyword-finder-selectDifficulty" class="block text-sm font-medium text-gray-700 mb-1">Select Difficulty</label>
+                         <select id="keyword-finder-selectDifficulty" class="w-full p-2 border rounded bg-white border-gray-300">
+                             <option value="any">Any Difficulty</option>
+                             <option value="very-easy">Very Easy (0-19)</option>
+                             <option value="easy">Easy (20-39)</option>
+                             <option value="medium">Medium (40-59)</option>
+                             <option value="difficult">Difficult (60-79)</option>
+                             <option value="very-difficult">Very Difficult (80-100)</option>
+                         </select>
+                     </div>
+                    <div class="relative">
+                         <label for="keyword-finder-keywordTypesDropdown" class="block text-sm font-medium text-gray-700 mb-1">Keyword Types</label>
+                         <button id="keyword-finder-keywordTypesDropdownBtn" class="w-full p-2 border rounded bg-white text-left">Select Keyword Types</button>
+                         <div id="keyword-finder-keywordTypesDropdown" class="hidden absolute w-full bg-white border rounded shadow-lg z-10 p-2 grid grid-cols-2 gap-2">
+                             <!-- Checkboxes will be injected here -->
+                         </div>
+                     </div>
+                </div>
+                <div id="keyword-finder-localSeoOptions" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="searchable-dropdown">
+                        <label for="keyword-finder-country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                        <input type="text" id="keyword-finder-country" class="w-full p-2 border rounded bg-white border-gray-300" placeholder="Search Country...">
+                        <div id="keyword-finder-country-list" class="hidden searchable-dropdown-list"></div>
+                    </div>
+                    <div class="searchable-dropdown">
+                        <label for="keyword-finder-state" class="block text-sm font-medium text-gray-700 mb-1">State / Region</label>
+                        <input type="text" id="keyword-finder-state" class="w-full p-2 border rounded bg-white border-gray-300" placeholder="Search State..." disabled>
+                        <div id="keyword-finder-state-list" class="hidden searchable-dropdown-list"></div>
+                    </div>
+                    <div class="searchable-dropdown">
+                        <label for="keyword-finder-city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        <input type="text" id="keyword-finder-city" class="w-full p-2 border rounded bg-white border-gray-300" placeholder="Search City..." disabled>
+                        <div id="keyword-finder-city-list" class="hidden searchable-dropdown-list"></div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button id="keyword-finder-findBtn" class="w-full btn-secondary text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center text-lg">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Find Keywords
+                    </button>
+                </div>
+            </div>
+            
+            <div id="keyword-finder-resultsSection" class="hidden mt-8">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <h2 class="text-3xl font-bold">Keywords found</h2>
+                    <div class="flex gap-2">
+                        <button id="keyword-finder-downloadCsvBtn" class="w-full sm:w-auto bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Download CSV
+                        </button>
+                        <button id="keyword-finder-newSearchBtn" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            New Search
+                        </button>
+                    </div>
+                </div>
+
+                <!-- New Stylish Filter Nav -->
+                <nav id="keyword-finder-filterNav" class="bg-gray-50 p-3 rounded-lg mb-6 border border-gray-200 flex flex-wrap gap-4 items-center">
+                    <div class="flex-grow min-w-[200px]">
+                        <input type="text" id="keyword-finder-filterKeyword" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Filter keywords...">
+                    </div>
+                    <div class="flex gap-2 min-w-[150px]">
+                        <input type="number" id="keyword-finder-minVolume" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Min Vol">
+                        <input type="number" id="keyword-finder-maxVolume" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Max Vol">
+                    </div>
+                    <div class="relative">
+                        <button id="keyword-finder-intentFilterBtn" class="p-2 border rounded-md bg-white w-full text-left flex items-center justify-between">
+                            <span>Intent</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="keyword-finder-intentFilterDropdown" class="hidden absolute bg-white border rounded shadow-lg z-20 mt-1 p-4 w-64">
+                            <div id="keyword-finder-intentFilterContainer" class="filter-dropdown-content space-y-2"></div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button id="keyword-finder-categoryFilterBtn" class="p-2 border rounded-md bg-white w-full text-left flex items-center justify-between">
+                            <span>Category</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="keyword-finder-categoryFilterDropdown" class="hidden absolute bg-white border rounded shadow-lg z-20 mt-1 p-4 w-64">
+                            <div id="keyword-finder-categoryFilterContainer" class="filter-dropdown-content space-y-2"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label for="keyword-finder-questionsOnlyToggle" class="text-sm font-medium">Questions Only</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="keyword-finder-questionsOnlyToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex-grow flex justify-end">
+                        <button id="keyword-finder-clusterBtn" class="p-2 btn-accent text-white font-bold rounded-lg transition-colors">Cluster</button>
+                    </div>
+                </nav>
+
+                 <div id="keyword-finder-bulkActions" class="hidden bg-indigo-50 p-3 rounded-lg mb-4 border border-indigo-200 flex items-center gap-4">
+                    <span id="keyword-finder-selectionCount" class="font-bold"></span>
+                    <button id="keyword-finder-copySelectedBtn" class="btn-primary text-white font-bold py-1 px-3 rounded-lg text-sm">Copy Selected</button>
+                    <button id="keyword-finder-downloadSelectedBtn" class="btn-primary text-white font-bold py-1 px-3 rounded-lg text-sm">Download Selected</button>
+                </div>
+                <div class="flex justify-between items-center mb-4">
+                    <p id="keyword-finder-resultsCounter" class="text-sm text-gray-600"></p>
+                </div>
+                <div id="keyword-finder-resultsTableContainer" class="w-full overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-4"><input type="checkbox" id="keyword-finder-selectAllCheckbox" class="custom-checkbox"></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header" data-sort-key="keyword">Keyword <span class="sort-icon"></span></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend (12m)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header" data-sort-key="volume">Volume <span class="sort-icon"></span></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header" data-sort-key="difficulty">Difficulty <span class="sort-icon"></span></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable-header" data-sort-key="contentGrade">Content Grade <span class="sort-icon"></span></th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SERP Features</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keyword-finder-keywordsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                     <button id="keyword-finder-loadMoreBtn" class="w-full sm:w-auto btn-secondary text-white font-bold py-3 px-8 rounded-lg transition-all flex items-center justify-center">Load More Keywords</button>
+                     <div id="keyword-finder-paginationContainer" class="flex items-center gap-2"></div>
+                </div>
+                <div class="mt-8 text-center">
+                    <p class="text-xs text-gray-400">Disclaimer: All SEO data (Volume, Difficulty, Trend) is generated for estimation and planning purposes and may not reflect real-world values.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- UI HELPER FUNCTIONS ---
+        const showLoader = (show, text = "Finding a huge list of keywords... this may take a few min") => {
+            const loader = document.getElementById('loader');
+            if(loader) {
+                document.getElementById('loader-text').textContent = text;
+                loader.style.display = show ? 'flex' : 'none';
+            }
+        };
+        
+        const showNotification = (message, type = 'success', duration = 3000) => {
+            const notification = document.getElementById('notification');
+            if(notification) {
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                setTimeout(() => notification.classList.remove('show'), duration);
+            }
+        };
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContainer = document.getElementById('modal-container');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        const showModal = (title, content) => {
+            if(modalTitle) modalTitle.textContent = title;
+            if(modalContent) modalContent.innerHTML = content;
+            if(modalOverlay) modalOverlay.style.display = 'block';
+            if(modalContainer) modalContainer.style.display = 'block';
+        };
+
+        const hideModal = () => {
+            if(modalOverlay) modalOverlay.style.display = 'none';
+            if(modalContainer) modalContainer.style.display = 'none';
+        };
+
+        if(modalCloseBtn) modalCloseBtn.addEventListener('click', hideModal);
+        if(modalOverlay) modalOverlay.addEventListener('click', hideModal);
+
+        // --- GEMINI API INTEGRATION ---
+        async function callGeminiAPI(prompt, schema = null, loaderText) {
+            showLoader(true, loaderText);
+            const apiKey = "AIzaSyBKoKDR7TrTtqcWB0xlDJNS4NNFfNDv8sw"; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {}
+            };
+
+            if (schema) {
+                payload.generationConfig.responseMimeType = "application/json";
+                payload.generationConfig.responseSchema = schema;
+            }
+
+            let lastError = null;
+            for (let i = 0; i < 3; i++) { // Retry up to 3 times
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 || response.status === 503) { // Retry on specific overload errors
+                            lastError = new Error(`The model is overloaded (status ${response.status}). Retrying...`);
+                            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Wait 1s, 2s, 3s
+                            continue;
+                        }
+                        let errorDetails = `API Error: ${response.status} ${response.statusText}`;
+                        try {
+                            const errorBody = await response.json();
+                            errorDetails = errorBody?.error?.message || JSON.stringify(errorBody);
+                        } catch (e) {
+                            errorDetails = await response.text() || errorDetails;
+                        }
+                        throw new Error(errorDetails);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        const errorInfo = result.promptFeedback ? JSON.stringify(result.promptFeedback) : 'API did not return valid content.';
+                        throw new Error(errorInfo);
+                    }
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            
+            console.error("Gemini API call failed after multiple retries:", lastError);
+            showNotification(`Error: ${lastError.message}`, 'error', 5000);
+            showLoader(false);
+            return null;
+        }
+
+        // --- ADVANCED KEYWORD FINDER LOGIC ---
+        function initAdvancedKeywordFinder() {
+            let allKeywordData = [];
+            let currentFilteredData = [];
+            let selectedKeywords = new Set();
+            let clusteredData = null;
+            let currentSort = { key: 'volume', direction: 'desc' };
+            let currentPage = 1;
+            const itemsPerPage = 100;
+
+            const toolPrefix = 'keyword-finder-';
+            const getEl = (id) => document.getElementById(toolPrefix + id);
+
+            const findBtn = getEl('findBtn');
+            if (!findBtn) {
+                console.error("Initialization failed: Find button not found.");
+                return;
+            }
+            
+            const inputSection = getEl('inputSection');
+            const resultsSection = getEl('resultsSection');
+            const newSearchBtn = getEl('newSearchBtn');
+            const downloadCsvBtn = getEl('downloadCsvBtn');
+            const seedKeywordInput = getEl('seedKeyword');
+            const selectIntent = getEl('selectIntent');
+            const selectDifficulty = getEl('selectDifficulty');
+            const keywordsTableBody = getEl('keywordsTableBody');
+            const filterKeyword = getEl('filterKeyword');
+            const [minVolume, maxVolume] = ['minVolume', 'maxVolume'].map(getEl);
+            const intentFilterBtn = getEl('intentFilterBtn');
+            const intentFilterDropdown = getEl('intentFilterDropdown');
+            const intentFilterContainer = getEl('intentFilterContainer');
+            const categoryFilterBtn = getEl('categoryFilterBtn');
+            const categoryFilterDropdown = getEl('categoryFilterDropdown');
+            const categoryFilterContainer = getEl('categoryFilterContainer');
+            const questionsOnlyToggle = getEl('questionsOnlyToggle');
+            const resultsCounter = getEl('resultsCounter');
+            const clusterBtn = getEl('clusterBtn');
+            const paginationContainer = getEl('paginationContainer');
+            const bulkActions = getEl('bulkActions');
+            const selectionCount = getEl('selectionCount');
+            const selectAllCheckbox = getEl('selectAllCheckbox');
+            const copySelectedBtn = getEl('copySelectedBtn');
+            const downloadSelectedBtn = getEl('downloadSelectedBtn');
+            const loadMoreBtn = getEl('loadMoreBtn');
+            const countryInput = getEl('country');
+            const stateInput = getEl('state');
+            const cityInput = getEl('city');
+            const countryList = getEl('country-list');
+            const stateList = getEl('state-list');
+            const cityList = getEl('city-list');
+            const keywordTypesDropdown = getEl('keywordTypesDropdown');
+            const keywordTypesDropdownBtn = getEl('keywordTypesDropdownBtn');
+            const localSeoOptions = getEl('localSeoOptions');
+            const seoTypeRadios = document.querySelectorAll('input[name="seo-type"]');
+
+            // --- Initial Setup ---
+            populateKeywordTypes();
+            fetchAndPopulateCountries();
+            updateSortIcons();
+
+            // --- Event Listeners ---
+            findBtn.addEventListener('click', () => findKeywords(false));
+            if(loadMoreBtn) loadMoreBtn.addEventListener('click', () => findKeywords(true));
+            if(newSearchBtn) newSearchBtn.addEventListener('click', () => startOver(false));
+            if(downloadCsvBtn) downloadCsvBtn.addEventListener('click', () => downloadCSV(currentFilteredData, 'filtered_keywords'));
+            if(clusterBtn) clusterBtn.addEventListener('click', clusterKeywords);
+            
+            [filterKeyword, minVolume, maxVolume, questionsOnlyToggle].forEach(el => {
+                if(el) el.addEventListener('input', () => { currentPage = 1; applyFiltersAndRender(); });
+            });
+
+            if(selectAllCheckbox) selectAllCheckbox.addEventListener('change', toggleSelectAll);
+            if(copySelectedBtn) copySelectedBtn.addEventListener('click', copySelected);
+            if(downloadSelectedBtn) downloadSelectedBtn.addEventListener('click', () => downloadCSV(getSelectedKeywordData(), 'selected_keywords'));
+            const thead = document.querySelector('thead');
+            if(thead) thead.addEventListener('click', handleSort);
+            if(keywordTypesDropdownBtn) keywordTypesDropdownBtn.addEventListener('click', () => keywordTypesDropdown.classList.toggle('hidden'));
+            
+            [intentFilterBtn, categoryFilterBtn].forEach(btn => {
+                if (btn) btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const dropdown = btn.nextElementSibling;
+                    dropdown.classList.toggle('hidden');
+                });
+            });
+            document.addEventListener('click', (e) => {
+                if(intentFilterDropdown && !intentFilterBtn.contains(e.target) && !intentFilterDropdown.contains(e.target)) {
+                    intentFilterDropdown.classList.add('hidden');
+                }
+                if(categoryFilterDropdown && !categoryFilterBtn.contains(e.target) && !categoryFilterDropdown.contains(e.target)) {
+                    categoryFilterDropdown.classList.add('hidden');
+                }
+            });
+
+            seoTypeRadios.forEach(radio => radio.addEventListener('change', (e) => {
+                if(localSeoOptions) localSeoOptions.classList.toggle('hidden', e.target.value !== 'local');
+            }));
+            
+            async function findKeywords(isLoadMore = false) {
+                const seedKeyword = seedKeywordInput.value.trim();
+                if (!seedKeyword) {
+                    showNotification("Please enter a seed keyword.", "error");
+                    return;
+                }
+                
+                if (!isLoadMore) {
+                    startOver(false, true);
+                }
+
+                const prompt = buildPrompt(isLoadMore);
+                const schema = buildKeywordListSchema();
+
+                const jsonString = await callGeminiAPI(prompt, schema, isLoadMore ? "Finding more keywords..." : "Finding a huge list of keywords... this may take a few min");
+                
+                if (jsonString) {
+                    try {
+                        const newKeywords = JSON.parse(jsonString);
+                        allKeywordData = [...allKeywordData, ...newKeywords];
+                        displayResults();
+                    } catch (error) {
+                        console.error("Error parsing keywords:", error);
+                        showNotification("Failed to parse the keyword data from the API.", "error");
+                    }
+                }
+            }
+            
+            function buildPrompt(isLoadMore) {
+                 const seedKeyword = seedKeywordInput.value.trim();
+                 const selectedIntent = selectIntent.value;
+                 const selectedDifficulty = selectDifficulty.options[selectDifficulty.selectedIndex].text;
+                 const seoType = document.querySelector('input[name="seo-type"]:checked').value;
+                 const selectedCountry = countryInput.value;
+                 const selectedState = stateInput.value;
+                 const selectedCity = cityInput.value;
+                 const selectedTypes = Array.from(keywordTypesDropdown.querySelectorAll('input:checked')).map(cb => cb.value);
+
+                 let prompt = `You are an SEO expert. For the seed keyword "${seedKeyword}", generate a comprehensive list of approximately 100 related keywords.`;
+
+                 if (selectedIntent !== 'Any Intent') prompt += ` The focus should be on keywords with a "${selectedIntent}" user intent.`;
+                 if (selectedDifficulty !== 'Any Difficulty') prompt += ` The focus should be on keywords with a difficulty level of "${selectedDifficulty}".`;
+                 
+                 if (seoType === 'local' && selectedCountry) {
+                      let location = selectedCountry;
+                      if (selectedState) location = `${selectedState}, ${location}`;
+                      if (selectedCity) location = `${selectedCity}, ${location}`;
+                      prompt += ` The keywords should be highly relevant for the location: ${location}.`;
+                 }
+
+                 if (selectedTypes.length > 0) {
+                      prompt += ` Prioritize the following types of keywords: ${selectedTypes.join(', ')}.`;
+                 }
+
+                 prompt += ` For each keyword, provide its SEO difficulty (0-100), its monthly search volume (a realistic number), a 12-month search trend (an array of 12 integers representing monthly interest), common SERP features (like "Featured Snippet", "PPA", "Video Carousel", or "None"), a relevant category (e.g., "Informational", "Question"), and its commercial intent (e.g., "Informational", "Navigational", "Commercial", "Transactional").`;
+
+                 if (isLoadMore && allKeywordData.length > 0) {
+                      const existingKeywords = allKeywordData.map(k => `"${k.keyword}"`).join(', ');
+                      prompt += `\n\nIMPORTANT: Do not include any of the following keywords in your response as they have already been provided: [${existingKeywords}]. Generate a fresh, new set of keywords.`;
+                 }
+                 
+                 return prompt;
+            }
+            
+            function buildKeywordListSchema() {
+                return {
+                    type: "ARRAY",
+                    items: {
+                        type: "OBJECT",
+                        properties: {
+                            "keyword": { "type": "STRING", "description": "The keyword phrase." },
+                            "volume": { "type": "INTEGER", "description": "Estimated monthly search volume." },
+                            "trend": { "type": "ARRAY", "items": { "type": "INTEGER" }, "description": "12-month search trend data." },
+                            "serp_features": { "type": "STRING", "description": "Common SERP features for this keyword." },
+                            "category": { "type": "STRING", "description": "A relevant category for the keyword." },
+                            "difficulty": { "type": "INTEGER", "description": "SEO difficulty score from 0 to 100." },
+                            "commercial_intent": { "type": "STRING", "description": "The user's intent behind the search." }
+                        },
+                        required: ["keyword", "volume", "trend", "serp_features", "category", "difficulty", "commercial_intent"]
+                    }
+                };
+            }
+
+            function displayResults() {
+                if(inputSection) inputSection.classList.add('hidden');
+                if(resultsSection) resultsSection.classList.remove('hidden');
+                populateFilters();
+                applyFiltersAndRender();
+            }
+
+            function populateFilters() {
+                if (!intentFilterContainer || !categoryFilterContainer) return;
+                
+                if (intentFilterContainer.children.length > 0 && categoryFilterContainer.children.length > 0) return;
+
+                const intents = [...new Set(allKeywordData.map(item => item.commercial_intent).filter(Boolean))];
+                const categories = [...new Set(allKeywordData.map(item => item.category).filter(Boolean))];
+
+                intentFilterContainer.innerHTML = intents.map(intent => `
+                    <label class="flex items-center"><input type="checkbox" class="filter-intent h-4 w-4 rounded border-gray-300 custom-checkbox focus:ring-offset-0" value="${intent}" checked> <span class="ml-2 text-sm">${intent}</span></label>
+                `).join('');
+
+                categoryFilterContainer.innerHTML = categories.map(category => `
+                    <label class="flex items-center"><input type="checkbox" class="filter-category h-4 w-4 rounded border-gray-300 custom-checkbox focus:ring-offset-0" value="${category}" checked> <span class="ml-2 text-sm">${category}</span></label>
+                `).join('');
+
+                document.querySelectorAll('#keyword-finder-app .filter-intent, #keyword-finder-app .filter-category').forEach(cb => cb.addEventListener('change', () => { currentPage = 1; applyFiltersAndRender(); }));
+            }
+
+            function getDifficultyRange() {
+                const difficultyValue = selectDifficulty.value;
+                switch(difficultyValue) {
+                    case 'very-easy': return { min: 0, max: 19 };
+                    case 'easy': return { min: 20, max: 39 };
+                    case 'medium': return { min: 40, max: 59 };
+                    case 'difficult': return { min: 60, max: 79 };
+                    case 'very-difficult': return { min: 80, max: 100 };
+                    default: return { min: -1, max: 101 };
+                }
+            }
+
+            function applyFiltersAndRender() {
+                if(allKeywordData.length === 0) return;
+                
+                clusteredData = null;
+
+                const keywordFilter = filterKeyword.value.toLowerCase();
+                const { min: minDifficulty, max: maxDifficulty } = getDifficultyRange();
+                const selectedIntents = Array.from(document.querySelectorAll('#keyword-finder-app .filter-intent:checked')).map(el => el.value);
+                const selectedCategories = Array.from(document.querySelectorAll('#keyword-finder-app .filter-category:checked')).map(el => el.value);
+                const minVol = parseInt(minVolume.value) || 0;
+                const maxVol = maxVolume.value ? parseInt(maxVolume.value) : Infinity;
+                const questionsOnly = questionsOnlyToggle.checked;
+                const questionWords = ['what', 'how', 'why', 'where', 'when', 'can', 'is', 'are', 'which', 'who'];
+
+                currentFilteredData = allKeywordData.filter(item => {
+                    const keywordLower = item.keyword.toLowerCase();
+                    const isQuestion = questionsOnly ? questionWords.some(word => keywordLower.startsWith(word + ' ')) || keywordLower.endsWith('?') : true;
+
+                    return keywordLower.includes(keywordFilter) &&
+                        (item.difficulty >= minDifficulty && item.difficulty <= maxDifficulty) &&
+                        selectedIntents.includes(item.commercial_intent) &&
+                        selectedCategories.includes(item.category) &&
+                        item.volume >= minVol && item.volume <= maxVol &&
+                        isQuestion;
+                });
+                sortData();
+                renderTable(currentFilteredData);
+                renderPagination(currentFilteredData.length);
+            }
+
+            function renderTable(data, isClustered = false) {
+                if (!keywordsTableBody || !resultsCounter) return;
+                keywordsTableBody.innerHTML = '';
+                selectedKeywords.clear();
+                updateBulkActions();
+                
+                if (isClustered) {
+                    let count = 0;
+                    for (const clusterName in data) {
+                        const clusterHeader = document.createElement('tr');
+                        clusterHeader.className = "bg-gray-100";
+                        clusterHeader.innerHTML = `<td class="p-4"></td><td colspan="7" class="px-6 py-3 text-lg font-bold text-gray-800">${clusterName}</td><td class="px-6 py-3 text-right"><button data-action="download-cluster" data-cluster-name="${clusterName}" class="text-xs btn-primary text-white font-bold py-1 px-2 rounded">Download Cluster</button></td>`;
+                        keywordsTableBody.appendChild(clusterHeader);
+                        data[clusterName].forEach(item => {
+                            keywordsTableBody.appendChild(createRow(item, count++));
+                        });
+                    }
+                    resultsCounter.textContent = `Showing ${count} clustered keywords of ${allKeywordData.length} total.`;
+                    paginationContainer.innerHTML = ''; // Hide pagination for clustered view
+                    return;
+                }
+
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const paginatedData = data.slice(startIndex, endIndex);
+
+                if (paginatedData.length === 0) {
+                    keywordsTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">No keywords match your current filters.</td></tr>`;
+                } else {
+                    paginatedData.forEach((item, index) => keywordsTableBody.appendChild(createRow(item, startIndex + index)));
+                }
+                resultsCounter.textContent = `Showing ${paginatedData.length} of ${data.length} filtered keywords.`;
+            }
+            
+            function calculateContentGrade(volume, difficulty) {
+                const volumeScore = Math.min(1, Math.log10(Math.max(1, volume)) / 5);
+                const difficultyScore = (100 - difficulty) / 100;
+                const finalScore = (volumeScore * 0.6) + (difficultyScore * 0.4);
+
+                if (finalScore > 0.75) return { grade: 'A', color: 'bg-green-500', explanation: 'Excellent potential: high volume relative to difficulty.' };
+                if (finalScore > 0.60) return { grade: 'B', color: 'bg-lime-500', explanation: 'Good potential: decent volume for the difficulty.' };
+                if (finalScore > 0.45) return { grade: 'C', color: 'bg-yellow-500', explanation: 'Average potential: may be competitive or have lower volume.' };
+                if (finalScore > 0.30) return { grade: 'D', color: 'bg-orange-500', explanation: 'Challenging: likely high difficulty or low volume.' };
+                return { grade: 'F', color: 'bg-red-500', explanation: 'Very difficult: high competition and/or very low volume.' };
+            }
+
+            function createRow(item, index) {
+                const row = document.createElement('tr');
+                const gradeInfo = calculateContentGrade(item.volume, item.difficulty);
+                item.contentGrade = gradeInfo.grade;
+
+                row.className = "hover:bg-gray-50";
+                row.innerHTML = `
+                    <td class="p-4"><input type="checkbox" data-keyword="${item.keyword}" class="custom-checkbox row-checkbox"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-medium text-gray-900">${item.keyword}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap">${createTrendGraph(item.trend)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.volume.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${createDifficultyBar(item.difficulty)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span title="${gradeInfo.explanation}" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${gradeInfo.color} text-white">${gradeInfo.grade}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.serp_features}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <button data-action="analyze-serp" data-keyword="${item.keyword}" title="Analyze SERP" class="text-gray-500 hover:text-indigo-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </button>
+                    </td>
+                `;
+                return row;
+            }
+            
+            function createDifficultyBar(score) {
+                let color = '#6ee7b7';
+                if (score > 79) color = '#f87171';
+                else if (score > 59) color = '#fb923c';
+                else if (score > 39) color = '#facc15';
+                else if (score > 19) color = '#a7f3d0';
+                return `<div class="flex items-center"><span class="w-8 text-sm font-medium text-gray-700">${score}</span><div class="w-full bg-gray-200 rounded-full h-2.5 ml-2"><div class="h-2.5 rounded-full" style="width: ${score}%; background-color: ${color};"></div></div></div>`;
+            }
+
+            function createTrendGraph(trendData) {
+                if (!trendData || !Array.isArray(trendData) || trendData.length === 0) return '';
+                const maxVal = Math.max(...trendData, 1);
+                const points = trendData.map((d, i) => `${i * 10},${15 - (d / maxVal * 15)}`).join(' ');
+                return `<svg viewBox="0 0 110 20" class="w-24 h-5"><polyline fill="none" stroke="var(--primary-color)" stroke-width="2" points="${points}"/></svg>`;
+            }
+
+            if(keywordsTableBody) keywordsTableBody.addEventListener('click', (e) => {
+                const target = e.target;
+                const button = target.closest('button[data-action]');
+                const checkbox = target.closest('.row-checkbox');
+
+                if (button) {
+                    e.stopPropagation();
+                    const action = button.dataset.action;
+                    const keyword = button.dataset.keyword;
+                    const clusterName = button.dataset.clusterName;
+                    
+                    if (action === 'analyze-serp') analyzeSERP(keyword);
+                    if (action === 'download-cluster') {
+                        if (clusteredData && clusteredData[clusterName]) {
+                            downloadCSV(clusteredData[clusterName], clusterName);
+                        }
+                    }
+                } else if (checkbox) {
+                    const keyword = checkbox.dataset.keyword;
+                    if (checkbox.checked) {
+                        selectedKeywords.add(keyword);
+                    } else {
+                        selectedKeywords.delete(keyword);
+                    }
+                    updateBulkActions();
+                }
+            });
+
+            function updateBulkActions() {
+                if (!bulkActions || !selectionCount || !selectAllCheckbox) return;
+                const count = selectedKeywords.size;
+                if (count > 0) {
+                    bulkActions.classList.remove('hidden');
+                    selectionCount.textContent = `${count} keyword${count > 1 ? 's' : ''} selected.`;
+                } else {
+                    bulkActions.classList.add('hidden');
+                }
+                const pageItems = currentFilteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                selectAllCheckbox.checked = count > 0 && pageItems.every(item => selectedKeywords.has(item.keyword));
+            }
+
+            function toggleSelectAll() {
+                if (!selectAllCheckbox || !keywordsTableBody) return;
+                const isChecked = selectAllCheckbox.checked;
+                const checkboxes = keywordsTableBody.querySelectorAll('.row-checkbox');
+                const pageItems = currentFilteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                
+                pageItems.forEach(item => {
+                    if (isChecked) {
+                        selectedKeywords.add(item.keyword);
+                    } else {
+                        selectedKeywords.delete(item.keyword);
+                    }
+                });
+                checkboxes.forEach(cb => cb.checked = isChecked);
+                updateBulkActions();
+            }
+            
+            function getSelectedKeywordData() {
+                return allKeywordData.filter(item => selectedKeywords.has(item.keyword));
+            }
+
+            function copySelected() {
+                const keywords = Array.from(selectedKeywords).join('\n');
+                navigator.clipboard.writeText(keywords).then(() => {
+                    showNotification(`${selectedKeywords.size} keywords copied!`, 'success');
+                }, () => {
+                    showNotification('Failed to copy to clipboard.', 'error');
+                });
+            }
+            
+            async function analyzeSERP(keyword) {
+                const prompt = `Analyze the SERP for the keyword "${keyword}". Identify the top 3 ranking pages. For each page, provide its title, the type of content (e.g., "Blog Post", "Product Page", "Video", "Forum"), and a brief one-sentence summary of its main focus or angle.`;
+                const schema = {
+                    type: "OBJECT",
+                    properties: {
+                        "serp_analysis": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "title": { "type": "STRING" },
+                                    "content_type": { "type": "STRING" },
+                                    "summary": { "type": "STRING" }
+                                },
+                                "required": ["title", "content_type", "summary"]
+                            }
+                        }
+                    },
+                    required: ["serp_analysis"]
+                };
+                const result = await callGeminiAPI(prompt, schema, `Analyzing SERP for "${keyword}"...`);
+                if (result) {
+                    try {
+                        const analysis = JSON.parse(result);
+                        let content = `<div class="space-y-4">`;
+                        analysis.serp_analysis.forEach((item, index) => {
+                            content += `<div class="p-3 border rounded-lg"><h4 class="font-bold text-gray-800">${index + 1}. ${item.title}</h4><p class="text-sm text-gray-500 mt-1 mb-2"><span class="font-semibold">Content Type:</span> ${item.content_type}</p><p class="text-gray-700">${item.summary}</p></div>`;
+                        });
+                        content += `</div>`;
+                        showModal(`SERP Analysis for "${keyword}"`, content);
+                    } catch (e) {
+                        console.error("Error parsing SERP analysis:", e);
+                        showNotification("Could not parse SERP analysis data.", "error");
+                    }
+                }
+            }
+            
+            async function clusterKeywords() {
+                if (currentFilteredData.length === 0) {
+                    showNotification("No keywords to cluster.", "error");
+                    return;
+                }
+                const keywords = currentFilteredData.map(item => item.keyword);
+                const prompt = `You are an expert SEO content strategist. Group the following keywords into relevant thematic clusters based on user intent and topic similarity. Return ONLY a valid JSON object where keys are the cluster names (e.g., "DIY Sustainable Fashion") and values are arrays of keywords from the provided list that belong to that cluster. Do not include any explanatory text before or after the JSON object. Here is the list of keywords: ${JSON.stringify(keywords)}`;
+                const result = await callGeminiAPI(prompt, null, "Clustering keywords...");
+                
+                if(result) {
+                    try {
+                        let jsonString = result;
+                        const startIndex = jsonString.indexOf('{');
+                        const endIndex = jsonString.lastIndexOf('}');
+                        if (startIndex === -1 || endIndex === -1) {
+                            throw new Error("No valid JSON object found in the response.");
+                        }
+                        jsonString = jsonString.substring(startIndex, endIndex + 1);
+
+                        const clusters = JSON.parse(jsonString);
+                        clusteredData = {};
+                        for (const clusterName in clusters) {
+                            if(Array.isArray(clusters[clusterName])) {
+                                clusteredData[clusterName] = allKeywordData.filter(item => clusters[clusterName].includes(item.keyword));
+                            }
+                        }
+                        renderTable(clusteredData, true);
+                        showNotification("Keywords clustered successfully!", "success");
+                    } catch(e) {
+                         showNotification("Could not automatically cluster keywords. The API returned an invalid format.", "error");
+                         console.error("Clustering error:", e, "API Response:", result);
+                    }
+                }
+            }
+
+            function downloadCSV(data, filename) {
+                if (data.length === 0) {
+                    showNotification("No data to download.", "error");
+                    return;
+                }
+
+                const headers = ["keyword", "volume", "difficulty", "contentGrade", "commercial_intent", "category", "serp_features"];
+                let csvContent = headers.join(',') + '\n';
+                data.forEach(item => {
+                    if (!item.contentGrade) {
+                        item.contentGrade = calculateContentGrade(item.volume, item.difficulty).grade;
+                    }
+                    const row = headers.map(header => {
+                        const value = item[header] !== undefined && item[header] !== null ? item[header] : '';
+                        return `"${String(value).replace(/"/g, '""')}"`
+                    });
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `${filename.replace(/ /g, '_')}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function startOver(clearInputs = true, keepInputs = false) {
+                 if (!keepInputs) {
+                    if (clearInputs) {
+                        if(seedKeywordInput) seedKeywordInput.value = '';
+                        if(selectIntent) selectIntent.value = 'Any Intent';
+                        if(selectDifficulty) selectDifficulty.value = 'any';
+                    }
+                    if(inputSection) inputSection.classList.remove('hidden');
+                }
+                allKeywordData = [];
+                currentFilteredData = [];
+                clusteredData = null;
+                currentPage = 1;
+                if(resultsSection) resultsSection.classList.add('hidden');
+                if(filterKeyword) filterKeyword.value = '';
+            }
+            
+            function handleSort(e) {
+                const header = e.target.closest('.sortable-header');
+                if (!header) return;
+
+                const key = header.dataset.sortKey;
+                const direction = currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                currentSort = { key, direction };
+                
+                sortData();
+                renderTable(clusteredData ? clusteredData : currentFilteredData, !!clusteredData);
+                updateSortIcons();
+            }
+
+            function sortData() {
+                const sortKey = currentSort.key;
+                const sortDir = currentSort.direction === 'asc' ? 1 : -1;
+                
+                const sorter = (a, b) => {
+                    if (sortKey === 'contentGrade') {
+                        if (!a.contentGrade) a.contentGrade = calculateContentGrade(a.volume, a.difficulty).grade;
+                        if (!b.contentGrade) b.contentGrade = calculateContentGrade(b.volume, b.difficulty).grade;
+                    }
+
+                    const valA = a[sortKey];
+                    const valB = b[sortKey];
+
+                    if (valA < valB) return -1 * sortDir;
+                    if (valA > valB) return 1 * sortDir;
+                    return 0;
+                };
+
+                if (clusteredData) {
+                    for(const clusterName in clusteredData) {
+                        clusteredData[clusterName].sort(sorter);
+                    }
+                } else {
+                    currentFilteredData.sort(sorter);
+                }
+            }
+            
+            function updateSortIcons() {
+                document.querySelectorAll('.sortable-header .sort-icon').forEach(icon => icon.textContent = '↕');
+                const activeIcon = document.querySelector(`.sortable-header[data-sort-key="${currentSort.key}"] .sort-icon`);
+                if (activeIcon) {
+                    activeIcon.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+                }
+            }
+
+            function populateKeywordTypes() {
+                const types = ["Short-tail", "Long-tail", "Mid-tail", "LSI", "Branded", "Geotargeting", "User", "Customer", "Product", "Service", "Question", "Local", "National", "International", "Negative", "Positive"];
+                const container = getEl('keywordTypesDropdown');
+                if(container) {
+                    container.innerHTML = types.map(type => `
+                        <label class="flex items-center p-1">
+                            <input type="checkbox" value="${type}" class="custom-checkbox keyword-type-cb h-4 w-4 rounded border-gray-300" checked>
+                            <span class="ml-2">${type}</span>
+                        </label>
+                    `).join('');
+                }
+            }
+            
+            let locationData = {};
+            async function fetchAndPopulateCountries() {
+                try {
+                    const response = await fetch('https://countriesnow.space/api/v0.1/countries/states');
+                    if(!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.msg);
+                    
+                    data.data.forEach(country => {
+                        locationData[country.name] = country.states.map(s => s.name).sort();
+                    });
+
+                    const countries = Object.keys(locationData).sort();
+                    setupSearchableDropdown(countryInput, countryList, countries, onCountrySelect);
+                } catch (error) {
+                    console.error("Could not fetch location data:", error);
+                    showNotification("Could not load country data. Local search may be affected.", "error");
+                }
+            }
+            
+            function onCountrySelect(country) {
+                const states = locationData[country] || [];
+                setupSearchableDropdown(stateInput, stateList, states, onStateSelect);
+                if(stateInput) stateInput.disabled = states.length === 0;
+                if(cityInput) {
+                    cityInput.value = '';
+                    cityInput.disabled = true;
+                }
+                if(cityList) cityList.innerHTML = '';
+            }
+            
+            async function onStateSelect(state) {
+                 const country = countryInput.value;
+                 if(cityInput) {
+                    cityInput.value = '';
+                    cityInput.disabled = true;
+                 }
+                 if(cityList) cityList.innerHTML = '';
+                 
+                 try {
+                     const response = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ country, state })
+                     });
+                     if(!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                     const data = await response.json();
+                     if (data.error) throw new Error(data.msg);
+
+                     const cities = data.data.sort();
+                     setupSearchableDropdown(cityInput, cityList, cities, (city) => { if(cityInput) cityInput.value = city });
+                     if(cityInput) cityInput.disabled = cities.length === 0;
+
+                 } catch(error) {
+                     console.error("Could not fetch cities:", error);
+                     showNotification("Could not load city data for this state.", "error");
+                 }
+            }
+
+            function setupSearchableDropdown(input, list, items, onSelect) {
+                if (!input || !list) return;
+
+                const parent = input.closest('.searchable-dropdown');
+
+                input.addEventListener('input', () => {
+                    const filter = input.value.toLowerCase();
+                    list.innerHTML = '';
+                    const filteredItems = items.filter(item => item.toLowerCase().includes(filter));
+                    filteredItems.forEach(item => {
+                        const div = document.createElement('div');
+                        div.textContent = item;
+                        div.addEventListener('click', () => {
+                            input.value = item;
+                            list.classList.add('hidden');
+                            onSelect(item);
+                        });
+                        list.appendChild(div);
+                    });
+                    list.classList.toggle('hidden', filteredItems.length === 0);
+                });
+
+                input.addEventListener('focus', () => {
+                    if (items.length > 0) list.classList.remove('hidden');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (parent && !parent.contains(e.target)) {
+                        list.classList.add('hidden');
+                    }
+                });
+            }
+
+            function renderPagination(totalItems) {
+                if (!paginationContainer) return;
+                paginationContainer.innerHTML = '';
+                const pageCount = Math.ceil(totalItems / itemsPerPage);
+                if (pageCount <= 1) return;
+
+                for (let i = 1; i <= pageCount; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.className = `pagination-btn px-3 py-1 border rounded-md ${i === currentPage ? 'active' : ''}`;
+                    btn.addEventListener('click', () => {
+                        currentPage = i;
+                        renderTable(currentFilteredData);
+                        renderPagination(totalItems);
+                    });
+                    paginationContainer.appendChild(btn);
+                }
+            }
+
+        }
+        
+        initAdvancedKeywordFinder();
+    });
+    </script>
+
+</body>
+</html>
