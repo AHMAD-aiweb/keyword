@@ -3,1143 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoSystem - Build Your Future</title>
+    <title>AutoSystem - Complete</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Using modular Firebase SDK for better performance -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom theme colors */
+        .bg-primary-green { background-color: #10EF52; }
+        .bg-primary-blue { background-color: #103EEF; }
+        .bg-primary-pink { background-color: #EF10AD; }
+        .bg-primary-yellow { background-color: #EFC110; }
+        .text-primary-blue { color: #103EEF; }
+        .border-primary-blue { border-color: #103EEF; }
+        .hover-bg-primary-blue-dark:hover { background-color: #0d32c6; }
+
+        /* Navbar active link style */
+        .nav-link.active {
+            color: #103EEF;
+            border-bottom: 2px solid #103EEF;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            padding-bottom: 4px;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover { color: #103EEF; }
+
+        /* Card styles */
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        
+        /* Toast notification */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); padding: 12px 24px;
+            border-radius: 8px; color: white; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        #toast.show { opacity: 1; visibility: visible; }
+        #toast.success { background-color: #10b981; }
+        #toast.error { background-color: #ef4444; }
+
+        /* Progress Bar */
+        .progress-bar-bg { background-color: #e5e7eb; }
+        .progress-bar-fill {
+            background-color: #10EF52;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        /* Tier Card Icons */
+        .tier-icon {
+            border-radius: 50%; width: 50px; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.5rem;
+        }
+        .tier-icon.starter { background-color: #6b7280; }
+        .tier-icon.bronze { background-color: #cd7f32; }
+        .tier-icon.silver { background-color: #c0c0c0; }
+        .tier-icon.gold { background: linear-gradient(145deg, #ffd700, #f0c400); }
+        .tier-icon.diamond { background: linear-gradient(145deg, #b9f2ff, #8cf0ff); }
+
+        /* Notification Timeline */
+        .timeline { border-left: 2px solid #e5e7eb; }
+        .timeline-item { position: relative; padding-left: 2rem; padding-bottom: 1.5rem; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-dot {
+            position: absolute; left: -9px; top: 4px;
+            height: 16px; width: 16px; border-radius: 9999px;
+            background-color: white; border: 3px solid #d1d5db;
+        }
+        .timeline-item.unread .timeline-dot { border-color: #103EEF; }
+        .timeline-item.unread { font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container" class="hidden min-h-screen flex flex-col">
+        <!-- Header / Navbar -->
+        <header class="bg-white shadow-md sticky top-0 z-50">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <a href="#" class="text-2xl font-bold"><span class="text-primary-blue">Auto</span><span style="color: #10EF52;">System</span></a>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#main" class="nav-link text-gray-700 font-medium px-3 py-2 text-sm">Main</a>
+                            <a href="#dashboard" class="nav-link text-gray-700 font-medium px-3 py-2 text-sm">Dashboard</a>
+                            <a href="#notification" class="nav-link text-gray-700 font-medium px-3 py-2 text-sm">Notification</a>
+                            <a href="#setting" class="nav-link text-gray-700 font-medium px-3 py-2 text-sm">Setting</a>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                         <div id="user-menu" class="relative hidden md:block">
+                            <button id="user-menu-button" class="flex items-center space-x-2">
+                                <span id="nav-username" class="font-medium text-gray-700"></span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="user-menu-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
+                                <a href="#setting" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <button id="nav-logout-btn" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>
+                            </div>
+                        </div>
+                        <button id="mobile-menu-button" class="md:hidden ml-4 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                            <i class="fas fa-bars fa-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+            <div id="mobile-menu" class="md:hidden hidden">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <a href="#main" class="nav-link-mobile block px-3 py-2 rounded-md text-base font-medium text-gray-700">Main</a>
+                    <a href="#dashboard" class="nav-link-mobile block px-3 py-2 rounded-md text-base font-medium text-gray-700">Dashboard</a>
+                    <a href="#notification" class="nav-link-mobile block px-3 py-2 rounded-md text-base font-medium text-gray-700">Notification</a>
+                    <a href="#setting" class="nav-link-mobile block px-3 py-2 rounded-md text-base font-medium text-gray-700">Setting</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+            <div id="page-main" class="page-content hidden"></div>
+            <div id="page-dashboard" class="page-content hidden"></div>
+
+            <div id="page-notification" class="page-content hidden">
+                <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Notifications</h1>
+                <div class="card">
+                    <div id="notifications-container" class="timeline">
+                        <!-- Notifications will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-setting" class="page-content hidden">
+                <h1 class="text-3xl font-bold text-gray-800 mb-6">Settings</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Update Profile -->
+                    <div class="card">
+                        <h2 class="text-xl font-semibold mb-4">Update Profile</h2>
+                        <form id="update-profile-form" class="space-y-4">
+                            <div>
+                                <label for="profile-phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                                <input type="tel" id="profile-phone" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label for="profile-address" class="block text-sm font-medium text-gray-700">Address</label>
+                                <input type="text" id="profile-address" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button type="submit" class="w-full bg-primary-blue text-white font-semibold py-2 px-4 rounded-md hover-bg-primary-blue-dark transition-colors">Save Changes</button>
+                        </form>
+                    </div>
+                    <!-- Change Password -->
+                    <div class="card">
+                        <h2 class="text-xl font-semibold mb-4">Change Password</h2>
+                        <form id="change-password-form" class="space-y-4">
+                            <div>
+                                <label for="current-password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                                <input type="password" id="current-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label for="new-password" class="block text-sm font-medium text-gray-700">New Password</label>
+                                <input type="password" id="new-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button type="submit" class="w-full bg-primary-pink text-white font-semibold py-2 px-4 rounded-md hover:bg-pink-700 transition-colors">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+                 <div class="mt-6 card">
+                    <h2 class="text-xl font-semibold mb-4">Account</h2>
+                    <button id="logout-btn" class="w-full bg-primary-yellow text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-yellow-500 transition-colors">Logout</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white"></footer>
+    </div>
+    
+    <div id="loader" class="flex items-center justify-center min-h-screen">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-blue"></div>
+    </div>
+    <div id="toast"></div>
+
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged,
-            updatePassword,
-            reauthenticateWithCredential,
-            EmailAuthProvider
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            addDoc, 
-            collection, 
-            onSnapshot,
-            query,
-            deleteDoc,
-            getDocs,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Your web app's Firebase configuration
-        // IMPORTANT: Replace with your actual Firebase configuration
+        // Firebase Config
         const firebaseConfig = {
-          apiKey: "AIzaSyB1SFpdzDcJ_lfVu1dLo7zgQhqQ6WiwiGE",
-          authDomain: "autosys-31e7e.firebaseapp.com",
-          projectId: "autosys-31e7e",
-          storageBucket: "autosys-31e7e.firebasestorage.app",
-          messagingSenderId: "532724704349",
-          appId: "1:532724704349:web:58f6bbc554c79d79ef19b4",
-          measurementId: "G-MLTN241WJR"
+            apiKey: "AIzaSyB1SFpdzDcJ_lfVu1dLo7zgQhqQ6WiwiGE",
+            authDomain: "autosys-31e7e.firebaseapp.com",
+            databaseURL: "https://autosys-31e7e-default-rtdb.firebaseio.com",
+            projectId: "autosys-31e7e",
+            storageBucket: "autosys-31e7e.appspot.com",
+            messagingSenderId: "532724704349",
+            appId: "1:532724704349:web:58f6bbc554c79d79ef19b4",
+            measurementId: "G-MLTN241WJR"
         };
+
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, set, push, serverTimestamp, update, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
-        // Make functions and variables globally accessible
-        window.auth = auth;
-        window.db = db;
-        window.firebase = {
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut,
-            onAuthStateChanged,
-            updatePassword,
-            reauthenticateWithCredential,
-            EmailAuthProvider,
-            doc,
-            setDoc,
-            getDoc,
-            addDoc,
-            collection,
-            onSnapshot,
-            query,
-            deleteDoc,
-            getDocs,
-            serverTimestamp
-        };
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --lime-green: #10EF52;
-            --bright-blue: #103EEF;
-            --hot-pink: #EF10AD;
-            --golden-yellow: #EFC110;
-        }
-        
-        .gradient-bg {
-            background: linear-gradient(135deg, var(--bright-blue), var(--lime-green), var(--hot-pink), var(--golden-yellow));
-        }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .progress-bar {
-            background: linear-gradient(90deg, var(--lime-green), var(--bright-blue));
-        }
-        
-        .tier-card {
-            border: 2px solid transparent;
-            background: linear-gradient(white, white) padding-box, 
-                        linear-gradient(45deg, var(--lime-green), var(--bright-blue), var(--hot-pink)) border-box;
-        }
-        
-        .navbar-gradient {
-            background: linear-gradient(90deg, var(--bright-blue), var(--lime-green));
-        }
-        
-        .hidden { display: none; }
-
-        /* Custom Modal for Alerts */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .modal-close-btn {
-            margin-top: 1.5rem;
-            padding: 0.5rem 1.5rem;
-            border-radius: 0.5rem;
-            color: white;
-            font-weight: 600;
-            transition: opacity 0.2s;
-        }
-    </style>
-</head>
-<body class="bg-gray-50 font-sans">
-    <!-- Custom Alert Modal -->
-    <div id="custom-alert" class="modal-overlay hidden">
-        <div class="modal-content">
-            <p id="alert-message" class="text-lg text-gray-800"></p>
-            <button id="alert-close-btn" class="modal-close-btn">Close</button>
-        </div>
-    </div>
-
-    <!-- Navigation -->
-    <nav id="navbar" class="navbar-gradient text-white p-4 fixed top-0 w-full z-50 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">AutoSystem</h1>
-            <div id="nav-links" class="hidden space-x-6">
-                <a href="#" onclick="showPage('main')" class="hover:text-yellow-300 transition-colors">Main</a>
-                <a href="#" onclick="showPage('dashboard')" class="hover:text-yellow-300 transition-colors">Dashboard</a>
-                <a href="#" onclick="showPage('notifications')" class="hover:text-yellow-300 transition-colors">Notifications</a>
-                <a href="#" onclick="showPage('settings')" class="hover:text-yellow-300 transition-colors">Settings</a>
-                <a href="#" onclick="logout()" class="hover:text-red-300 transition-colors">Logout</a>
-            </div>
-            <div id="auth-links" class="space-x-4">
-                <a href="#" onclick="showPage('signin')" class="hover:text-yellow-300 transition-colors">Sign In</a>
-                <a href="#" onclick="showPage('signup')" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">Sign Up</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Container -->
-    <div class="pt-20 min-h-screen">
-        <!-- Landing Page -->
-        <div id="landing-page" class="gradient-bg min-h-screen flex items-center justify-center text-white">
-            <div class="text-center max-w-4xl mx-auto px-6">
-                <h1 class="text-6xl font-bold mb-6">Welcome to AutoSystem</h1>
-                <p class="text-xl mb-8">Build your future with flexible part-time opportunities. Earn rewards, grow your career, and unlock your potential.</p>
-                <div class="space-x-4">
-                    <button onclick="showPage('signup')" class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors">Get Started</button>
-                    <button onclick="showPage('signin')" class="border-2 border-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">Sign In</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sign Up Page -->
-        <div id="signup-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-3xl font-bold text-center mb-8" style="color: var(--bright-blue)">Create Your Account</h2>
-                <form id="signup-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">First Name</label>
-                            <input type="text" id="firstName" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">Last Name</label>
-                            <input type="text" id="lastName" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Email</label>
-                        <input type="email" id="email" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Password</label>
-                        <input type="password" id="password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Phone Number</label>
-                        <input type="tel" id="phone" placeholder="+92-XXX-XXXXXXX" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Full Address</label>
-                        <textarea id="address" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-24"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Gender</label>
-                        <div class="flex space-x-6">
-                            <label class="flex items-center">
-                                <input type="radio" name="gender" value="Male" required class="mr-2">
-                                <span>Male</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="gender" value="Female" required class="mr-2">
-                                <span>Female</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="gender" value="Other" required class="mr-2">
-                                <span>Other</span>
-                            </label>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold text-lg hover:opacity-90 transition-opacity" style="background: var(--bright-blue)">Create Account</button>
-                </form>
-                <p class="text-center mt-6">Already have an account? <a href="#" onclick="showPage('signin')" class="font-semibold" style="color: var(--bright-blue)">Sign In</a></p>
-            </div>
-        </div>
-
-        <!-- Sign In Page -->
-        <div id="signin-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-3xl font-bold text-center mb-8" style="color: var(--bright-blue)">Welcome Back</h2>
-                <form id="signin-form" class="space-y-6">
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Email</label>
-                        <input type="email" id="signin-email" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Password</label>
-                        <input type="password" id="signin-password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold text-lg hover:opacity-90 transition-opacity" style="background: var(--bright-blue)">Sign In</button>
-                </form>
-                <p class="text-center mt-6">Don't have an account? <a href="#" onclick="showPage('signup')" class="font-semibold" style="color: var(--bright-blue)">Sign Up</a></p>
-            </div>
-        </div>
-
-        <!-- Main Page (Post-Login) -->
-        <div id="main-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-                    <h2 id="welcome-message" class="text-4xl font-bold mb-6" style="color: var(--lime-green)">Loading...</h2>
-                    
-                    <!-- Short Links Display -->
-                    <div class="mb-8">
-                        <h3 class="text-2xl font-semibold mb-4" style="color: var(--bright-blue)">Your Short Links</h3>
-                        <div id="short-links" class="space-y-3">
-                            <!-- Links will be populated here by Firebase -->
-                        </div>
-                    </div>
-
-                    <!-- Work Submission -->
-                    <div class="mb-8">
-                        <h3 class="text-2xl font-semibold mb-4" style="color: var(--hot-pink)">Submit Your Work</h3>
-                        <div class="flex space-x-4">
-                            <input type="url" id="work-link" placeholder="Enter Google Drive shareable link" class="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                            <button onclick="submitWork()" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--hot-pink)">Submit Work</button>
-                        </div>
-                    </div>
-
-                    <!-- Issue Reporting -->
-                    <div>
-                        <h3 class="text-2xl font-semibold mb-4" style="color: var(--golden-yellow)">Report an Issue</h3>
-                        <div class="space-y-4">
-                            <textarea id="issue-text" placeholder="Describe your issue..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-32"></textarea>
-                            <button onclick="sendIssue()" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--golden-yellow)">Send Issue to Admin</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dashboard Page -->
-        <div id="dashboard-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-6xl mx-auto">
-                <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Your Dashboard</h2>
-                
-                <!-- Click Counter -->
-                <div class="bg-white rounded-xl shadow-lg p-8 mb-8 text-center">
-                    <h3 class="text-2xl font-semibold mb-4" style="color: var(--lime-green)">Total Clicks</h3>
-                    <div class="text-6xl font-bold" style="color: var(--bright-blue)" id="total-clicks">0</div>
-                </div>
-
-                <!-- Reward Tiers -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Starter Tier -->
-                    <div class="tier-card bg-white rounded-xl p-6 card-hover">
-                        <div class="text-center mb-4">
-                            <h4 class="text-xl font-bold" style="color: var(--lime-green)">🌟 Starter</h4>
-                            <p class="text-gray-600">10 clicks</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4">
-                                <div id="starter-progress" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2"><span id="starter-current">0</span> / 10 clicks</p>
-                        </div>
-                        <button id="starter-claim" onclick="claimReward('starter')" disabled class="w-full py-2 rounded-lg text-white font-semibold bg-gray-400">Claim Unlock</button>
-                    </div>
-
-                    <!-- Bronze Tier -->
-                    <div class="tier-card bg-white rounded-xl p-6 card-hover">
-                        <div class="text-center mb-4">
-                            <h4 class="text-xl font-bold" style="color: #CD7F32">🥉 Bronze</h4>
-                            <p class="text-gray-600">7,500 clicks/month</p>
-                            <p class="font-semibold" style="color: var(--lime-green)">Rs. 5,000</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4">
-                                <div id="bronze-progress" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2"><span id="bronze-current">0</span> / 7,500 clicks</p>
-                        </div>
-                        <button id="bronze-claim" onclick="claimReward('bronze')" disabled class="w-full py-2 rounded-lg text-white font-semibold bg-gray-400">Claim Rs. 5,000</button>
-                    </div>
-
-                    <!-- Silver Tier -->
-                    <div class="tier-card bg-white rounded-xl p-6 card-hover">
-                        <div class="text-center mb-4">
-                            <h4 class="text-xl font-bold" style="color: #C0C0C0">🥈 Silver</h4>
-                            <p class="text-gray-600">15,000 clicks/month</p>
-                            <p class="font-semibold" style="color: var(--lime-green)">Rs. 10,000</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4">
-                                <div id="silver-progress" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2"><span id="silver-current">0</span> / 15,000 clicks</p>
-                        </div>
-                        <button id="silver-claim" onclick="claimReward('silver')" disabled class="w-full py-2 rounded-lg text-white font-semibold bg-gray-400">Claim Rs. 10,000</button>
-                    </div>
-
-                    <!-- Gold Tier -->
-                    <div class="tier-card bg-white rounded-xl p-6 card-hover">
-                        <div class="text-center mb-4">
-                            <h4 class="text-xl font-bold" style="color: #FFD700">🥇 Gold</h4>
-                            <p class="text-gray-600">50,000 clicks/month</p>
-                            <p class="font-semibold" style="color: var(--lime-green)">$100 USD</p>
-                            <p class="text-xs text-blue-600">Permanent work eligibility</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4">
-                                <div id="gold-progress" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2"><span id="gold-current">0</span> / 50,000 clicks</p>
-                        </div>
-                        <button id="gold-claim" onclick="claimReward('gold')" disabled class="w-full py-2 rounded-lg text-white font-semibold bg-gray-400">Claim $100</button>
-                    </div>
-
-                    <!-- Diamond Tier -->
-                    <div class="tier-card bg-white rounded-xl p-6 card-hover">
-                        <div class="text-center mb-4">
-                            <h4 class="text-xl font-bold" style="color: var(--bright-blue)">💎 Diamond</h4>
-                            <p class="text-gray-600">100,000 clicks/month</p>
-                            <p class="font-semibold" style="color: var(--lime-green)">Rs. 50,000</p>
-                        </div>
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4">
-                                <div id="diamond-progress" class="progress-bar h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2"><span id="diamond-current">0</span> / 100,000 clicks</p>
-                        </div>
-                        <button id="diamond-claim" onclick="claimReward('diamond')" disabled class="w-full py-2 rounded-lg text-white font-semibold bg-gray-400">Claim Rs. 50,000</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications Page -->
-        <div id="notifications-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Notifications</h2>
-                <div id="notifications-list" class="space-y-4">
-                    <!-- Notifications will be populated here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Page -->
-        <div id="settings-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-3xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Settings</h2>
-                <form id="change-password-form" class="space-y-6">
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Current Password</label>
-                        <input type="password" id="current-password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">New Password</label>
-                        <input type="password" id="new-password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Confirm New Password</label>
-                        <input type="password" id="confirm-password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--bright-blue)">Change Password</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Career Page -->
-        <div id="career-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Career Opportunities</h2>
-                <p class="text-lg text-gray-700 mb-8 text-center">Join our team and build your future with AutoSystem. Submit your CV and take the next step in your career.</p>
-                
-                <form id="career-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">Full Name</label>
-                            <input type="text" id="career-name" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">Email</label>
-                            <input type="email" id="career-email" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Educational Background</label>
-                        <textarea id="education" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-24" placeholder="Describe your educational qualifications..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Work Experience</label>
-                        <textarea id="experience" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-32" placeholder="Describe your work experience..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Skills</label>
-                        <textarea id="skills" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-24" placeholder="List your key skills..."></textarea>
-                    </div>
-                    
-                    <!-- Note: File upload requires Firebase Storage, which is a separate setup. This form will save text data. -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Resume Upload (Note)</label>
-                        <p class="text-sm text-gray-500">Resume file upload requires additional setup (Firebase Storage). This form will submit your text details.</p>
-                    </div>
-                    
-                    <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold text-lg hover:opacity-90 transition-opacity" style="background: var(--lime-green)">Submit Application</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Terms & Conditions Page -->
-        <div id="terms-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Terms & Conditions</h2>
-                
-                <div class="prose max-w-none text-gray-700 space-y-6">
-                    <h3 class="text-2xl font-semibold" style="color: var(--lime-green)">Welcome to AutoSystem</h3>
-                    <p>AutoSystem offers a flexible part-time work opportunity that allows you to build your future while earning rewards. By using our platform, you agree to the following terms and conditions.</p>
-                    
-                    <h3 class="text-2xl font-semibold" style="color: var(--hot-pink)">Part-Time Work Opportunity</h3>
-                    <p>Our platform provides a unique opportunity to earn money through link sharing and engagement. This is a flexible work arrangement that allows you to work at your own pace and schedule.</p>
-                    
-                    <h3 class="text-2xl font-semibold" style="color: var(--golden-yellow)">Earning Potential</h3>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li>Starter Level: Complete 10 clicks to unlock the program</li>
-                        <li>Bronze Level: 7,500 clicks/month earns Rs. 5,000</li>
-                        <li>Silver Level: 15,000 clicks/month earns Rs. 10,000</li>
-                        <li>Gold Level: 50,000 clicks/month earns $100 USD and permanent work eligibility</li>
-                        <li>Diamond Level: 100,000 clicks/month earns Rs. 50,000</li>
-                    </ul>
-                    
-                    <h3 class="text-2xl font-semibold" style="color: var(--bright-blue)">Platform Rules</h3>
-                    <ul class="list-disc pl-6 space-y-2">
-                        <li>All work submissions must be valid Google Drive shareable links</li>
-                        <li>Users must maintain honest and ethical practices</li>
-                        <li>Rewards are claimed monthly based on achievement of tier requirements</li>
-                        <li>The platform reserves the right to verify all activities</li>
-                        <li>Users must provide accurate information during registration</li>
-                    </ul>
-                    
-                    <h3 class="text-2xl font-semibold" style="color: var(--lime-green)">Building Your Future</h3>
-                    <p>AutoSystem is designed to be more than just a part-time opportunity. It's a platform that helps you develop skills, build a network, and create pathways to permanent employment. Our flexible approach allows you to balance this opportunity with your other commitments while working towards your career goals.</p>
-                    
-                    <p class="text-sm text-gray-600 mt-8">By continuing to use AutoSystem, you acknowledge that you have read, understood, and agree to be bound by these terms and conditions.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contact Us Page -->
-        <div id="contact-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center">
-                <h2 class="text-4xl font-bold mb-8" style="color: var(--bright-blue)">Contact Us</h2>
-                <div class="mb-8">
-                    <div class="text-6xl mb-4">📧</div>
-                    <h3 class="text-2xl font-semibold mb-4" style="color: var(--lime-green)">Get in Touch</h3>
-                    <p class="text-lg text-gray-700 mb-6">We're here to answer your questions and provide support on your journey with us.</p>
-                    <a href="mailto:contactmashab@gmail.com" class="text-2xl font-semibold hover:underline" style="color: var(--bright-blue)">contactmashab@gmail.com</a>
-                </div>
-                <p class="text-gray-600">Get in touch with the AutoSystem team. We're here to answer your questions and provide support on your journey with us.</p>
-            </div>
-        </div>
-
-        <!-- About Us Page -->
-        <div id="about-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">About AutoSystem</h2>
-                
-                <div class="space-y-8">
-                    <div class="text-center">
-                        <div class="text-6xl mb-4">🚀</div>
-                        <p class="text-lg text-gray-700">AutoSystem is a comprehensive platform designed to provide flexible part-time work opportunities while helping users build their careers and earn meaningful rewards.</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="text-center p-6 rounded-lg" style="background-color: rgba(16, 239, 82, 0.1)">
-                            <h3 class="text-2xl font-semibold mb-4" style="color: var(--lime-green)">Main Features</h3>
-                            <ul class="text-left space-y-2">
-                                <li>• Personalized dashboard with progress tracking</li>
-                                <li>• System-generated short links for easy sharing</li>
-                                <li>• Work submission system for Google Drive links</li>
-                                <li>• Direct communication with admin support</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="text-center p-6 rounded-lg" style="background-color: rgba(16, 62, 239, 0.1)">
-                            <h3 class="text-2xl font-semibold mb-4" style="color: var(--bright-blue)">Reward System</h3>
-                            <ul class="text-left space-y-2">
-                                <li>• Progressive tier system from Starter to Diamond</li>
-                                <li>• Monthly rewards ranging from Rs. 5,000 to Rs. 50,000</li>
-                                <li>• International rewards up to $100 USD</li>
-                                <li>• Permanent work eligibility at Gold tier</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="text-center p-6 rounded-lg" style="background-color: rgba(239, 16, 173, 0.1)">
-                            <h3 class="text-2xl font-semibold mb-4" style="color: var(--hot-pink)">Career Development</h3>
-                            <ul class="text-left space-y-2">
-                                <li>• Comprehensive CV submission system</li>
-                                <li>• Skills development opportunities</li>
-                                <li>• Professional networking platform</li>
-                                <li>• Pathway to permanent employment</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="text-center p-6 rounded-lg" style="background-color: rgba(239, 193, 16, 0.1)">
-                            <h3 class="text-2xl font-semibold mb-4" style="color: var(--golden-yellow)">User Benefits</h3>
-                            <ul class="text-left space-y-2">
-                                <li>• Flexible work schedule</li>
-                                <li>• Real-time progress tracking</li>
-                                <li>• Secure user authentication</li>
-                                <li>• Responsive design for all devices</li>
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center">
-                        <h3 class="text-2xl font-semibold mb-4" style="color: var(--bright-blue)">Our Mission</h3>
-                        <p class="text-lg text-gray-700">We believe in empowering individuals to build their future through flexible work opportunities. AutoSystem combines earning potential with career development, creating a platform where users can grow professionally while achieving financial goals.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Admin Login Page -->
-        <div id="admin-login-page" class="hidden container mx-auto px-6 py-12">
-            <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-3xl font-bold text-center mb-8" style="color: var(--bright-blue)">Admin Access</h2>
-                <form id="admin-login-form" class="space-y-6">
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Admin Email</label>
-                        <input type="email" id="admin-email" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Admin Password</label>
-                        <input type="password" id="admin-password" required class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--bright-blue)">Access Admin Panel</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Admin Dashboard -->
-        <div id="admin-dashboard" class="hidden container mx-auto px-6 py-12">
-            <h2 class="text-4xl font-bold mb-8 text-center" style="color: var(--bright-blue)">Admin Dashboard</h2>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <!-- Admin Navigation Cards -->
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24">
-                        <h3 class="text-xl font-semibold mb-4" style="color: var(--lime-green)">Admin Controls</h3>
-                        <div class="space-y-3">
-                            <button onclick="showAdminSection('user-details', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn" style="background-color: rgba(16, 239, 82, 0.1)">👥 User Details</button>
-                            <button onclick="showAdminSection('user-resumes', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn">📄 User Resumes</button>
-                            <button onclick="showAdminSection('manage-links', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn">🔗 Manage Links</button>
-                            <button onclick="showAdminSection('user-workings', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn">💼 User Workings</button>
-                            <button onclick="showAdminSection('notifications', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn">📢 Notifications</button>
-                            <button onclick="showAdminSection('total-clicks', event)" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors admin-nav-btn">📊 Total Clicks</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Admin Content Area -->
-                <div class="lg:col-span-3">
-                    <!-- User Details Section -->
-                    <div id="admin-user-details" class="admin-section bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-2xl font-semibold" style="color: var(--bright-blue)">User Details</h3>
-                            <button onclick="downloadUsersPDF()" class="px-4 py-2 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--lime-green)">Download PDF</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border border-gray-300">
-                                <thead>
-                                    <tr class="bg-gray-100">
-                                        <th class="border border-gray-300 p-3 text-left">First Name</th>
-                                        <th class="border border-gray-300 p-3 text-left">Last Name</th>
-                                        <th class="border border-gray-300 p-3 text-left">Email</th>
-                                        <th class="border border-gray-300 p-3 text-left">Phone</th>
-                                        <th class="border border-gray-300 p-3 text-left">Address</th>
-                                        <th class="border border-gray-300 p-3 text-left">Gender</th>
-                                        <th class="border border-gray-300 p-3 text-left">Clicks</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="users-table-body">
-                                    <!-- Users will be populated here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- User Resumes Section -->
-                    <div id="admin-user-resumes" class="admin-section hidden bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-2xl font-semibold mb-6" style="color: var(--bright-blue)">User Resumes</h3>
-                        <div id="resumes-list" class="space-y-4">
-                            <!-- Resumes will be populated here -->
-                        </div>
-                    </div>
-
-                    <!-- Manage Links Section -->
-                    <div id="admin-manage-links" class="admin-section hidden bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-2xl font-semibold mb-6" style="color: var(--bright-blue)">Manage Links</h3>
-                        
-                        <!-- Add New Link -->
-                        <div class="mb-8 p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                            <h4 class="text-lg font-semibold mb-4" style="color: var(--lime-green)">Add New Main Link</h4>
-                            <div class="flex space-x-4">
-                                <input type="url" id="new-main-link" placeholder="Enter main link URL" class="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
-                                <button onclick="addMainLink()" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--lime-green)">Add Link</button>
-                            </div>
-                        </div>
-
-                        <!-- Existing Links -->
-                        <div>
-                            <h4 class="text-lg font-semibold mb-4" style="color: var(--hot-pink)">Existing Main Links</h4>
-                            <div id="main-links-list" class="space-y-3">
-                                <!-- Links will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User Workings Section -->
-                    <div id="admin-user-workings" class="admin-section hidden bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-2xl font-semibold mb-6" style="color: var(--bright-blue)">User Workings</h3>
-                        <div id="user-workings-list" class="space-y-4">
-                            <!-- User workings will be populated here -->
-                        </div>
-                    </div>
-
-                    <!-- Notifications Section -->
-                    <div id="admin-notifications" class="admin-section hidden bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-2xl font-semibold mb-6" style="color: var(--bright-blue)">Notifications</h3>
-                        
-                        <!-- Send Notifications -->
-                        <div class="mb-8 p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                            <h4 class="text-lg font-semibold mb-4" style="color: var(--lime-green)">Send Notification</h4>
-                            <div class="space-y-4">
-                                <div class="flex space-x-4">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="notification-type" value="all" checked class="mr-2">
-                                        <span>All Users</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="notification-type" value="specific" class="mr-2">
-                                        <span>Specific User</span>
-                                    </label>
-                                </div>
-                                <input type="text" id="specific-user-email" placeholder="Enter User Email (for specific user)" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" disabled>
-                                <textarea id="notification-message" placeholder="Enter notification message..." class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none h-32"></textarea>
-                                <button onclick="sendNotification()" class="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity" style="background: var(--lime-green)">Send Notification</button>
-                            </div>
-                        </div>
-
-                        <!-- Received Issues -->
-                        <div>
-                            <h4 class="text-lg font-semibold mb-4" style="color: var(--hot-pink)">Received Issues</h4>
-                            <div id="received-issues-list" class="space-y-3">
-                                <!-- Issues will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Clicks Section -->
-                    <div id="admin-total-clicks" class="admin-section hidden bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-2xl font-semibold mb-6" style="color: var(--bright-blue)">Total Clicks Analytics</h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            <div class="text-center p-6 rounded-lg" style="background-color: rgba(16, 239, 82, 0.1)">
-                                <h4 class="text-lg font-semibold mb-2" style="color: var(--lime-green)">Total Clicks</h4>
-                                <div class="text-4xl font-bold" style="color: var(--bright-blue)" id="admin-total-clicks-count">0</div>
-                            </div>
-                            <div class="text-center p-6 rounded-lg" style="background-color: rgba(16, 62, 239, 0.1)">
-                                <h4 class="text-lg font-semibold mb-2" style="color: var(--bright-blue)">Active Users</h4>
-                                <div class="text-4xl font-bold" style="color: var(--lime-green)" id="admin-active-users">0</div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 class="text-lg font-semibold mb-4" style="color: var(--hot-pink)">Clicks by Country (Sample)</h4>
-                            <canvas id="country-chart" width="400" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12 mt-16">
-        <div class="container mx-auto px-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <h3 class="text-2xl font-bold mb-4" style="color: var(--lime-green)">AutoSystem</h3>
-                    <p class="text-gray-300">Build your future with flexible part-time opportunities.</p>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
-                    <div class="space-y-2">
-                        <a href="#" onclick="showPage('about')" class="block text-gray-300 hover:text-white transition-colors">About Us</a>
-                        <a href="#" onclick="showPage('career')" class="block text-gray-300 hover:text-white transition-colors">Career</a>
-                        <a href="#" onclick="showPage('contact')" class="block text-gray-300 hover:text-white transition-colors">Contact Us</a>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold mb-4">Legal</h4>
-                    <div class="space-y-2">
-                        <a href="#" onclick="showPage('terms')" class="block text-gray-300 hover:text-white transition-colors">Terms & Conditions</a>
-                        <a href="#" onclick="showPage('privacy')" class="block text-gray-300 hover:text-white transition-colors">Privacy Policy</a>
-                        <a href="#" onclick="showPage('admin-login')" class="text-xs text-gray-500 hover:text-gray-400 transition-colors">Admin</a>
-                    </div>
-                </div>
-            </div>
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-                <p>&copy; 2024 AutoSystem. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script type="module">
-        // This script runs after the DOM is loaded and Firebase is initialized
-        
-        // --- GLOBAL STATE ---
-        let currentUserData = null;
-        let isAdmin = false;
-        let unsubscribeUser = null; // To detach listener on logout
-        let unsubscribeNotifications = null; // To detach listener on logout
-
-        // --- DOM ELEMENTS ---
-        const signupForm = document.getElementById('signup-form');
-        const signinForm = document.getElementById('signin-form');
+        // --- Global Variables & DOM Elements ---
+        let currentUserId = null;
+        let userData = null;
+        const loader = document.getElementById('loader');
+        const appContainer = document.getElementById('app-container');
+        const toastEl = document.getElementById('toast');
+        const notificationsContainer = document.getElementById('notifications-container');
+        const updateProfileForm = document.getElementById('update-profile-form');
         const changePasswordForm = document.getElementById('change-password-form');
-        const careerForm = document.getElementById('career-form');
-        const adminLoginForm = document.getElementById('admin-login-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const navLogoutBtn = document.getElementById('nav-logout-btn');
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenuDropdown = document.getElementById('user-menu-dropdown');
+        const navUsername = document.getElementById('nav-username');
 
-        // --- CUSTOM ALERT MODAL ---
-        const customAlertModal = document.getElementById('custom-alert');
-        const alertMessage = document.getElementById('alert-message');
-        const alertCloseBtn = document.getElementById('alert-close-btn');
-
-        function showAlert(message, isError = false) {
-            alertMessage.textContent = message;
-            alertCloseBtn.className = 'modal-close-btn'; // Reset class
-            if (isError) {
-                alertCloseBtn.classList.add('bg-red-500', 'hover:bg-red-600');
-            } else {
-                alertCloseBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            }
-            customAlertModal.classList.remove('hidden');
-        }
-        alertCloseBtn.addEventListener('click', () => customAlertModal.classList.add('hidden'));
-
-
-        // --- PAGE NAVIGATION ---
-        window.showPage = (pageId) => {
-            const pages = document.querySelectorAll('[id$="-page"], #landing-page, #admin-dashboard');
-            pages.forEach(page => page.classList.add('hidden'));
-            
-            const targetId = pageId === 'landing' ? 'landing-page' : `${pageId}-page`;
-            const page = document.getElementById(targetId) || document.getElementById(pageId);
-            if (page) {
-                page.classList.remove('hidden');
-            }
-            
-            updateNavigation();
-            
-            // Load data for the specific page if needed
-            if (auth.currentUser) {
-                loadPageData(pageId);
-            }
-        };
-
-        function updateNavigation() {
-            const navLinks = document.getElementById('nav-links');
-            const authLinks = document.getElementById('auth-links');
-            
-            if (auth.currentUser) {
-                navLinks.classList.remove('hidden');
-                authLinks.classList.add('hidden');
-            } else {
-                navLinks.classList.add('hidden');
-                authLinks.classList.remove('hidden');
-            }
-        }
-
-        function loadPageData(pageId) {
-            switch(pageId) {
-                case 'main':
-                    loadMainPageData();
-                    break;
-                case 'dashboard':
-                    loadDashboardData();
-                    break;
-                case 'notifications':
-                    // Notifications are loaded via listener
-                    break;
-                case 'admin-dashboard':
-                    if (isAdmin) {
-                        showAdminSection('user-details', { target: document.querySelector('.admin-nav-btn') });
-                    }
-                    break;
-            }
-        }
-
-        // --- AUTHENTICATION ---
-        onAuthStateChanged(auth, async (user) => {
+        // --- Auth State Observer ---
+        onAuthStateChanged(auth, user => {
             if (user) {
-                // User is signed in.
-                const userDocRef = doc(db, "users", user.uid);
-                unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentUserData = { id: docSnap.id, ...docSnap.data() };
-                        isAdmin = currentUserData.role === 'admin';
-                        if (isAdmin) {
-                            // If admin, show admin dashboard by default
-                            showPage('admin-dashboard');
-                        } else {
-                            showPage('main');
-                        }
-                        listenForNotifications(user.uid);
-                    } else {
-                        console.error("User data not found in Firestore!");
-                        logout();
-                    }
-                });
+                currentUserId = user.uid;
+                loader.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                listenToUserData(currentUserId);
             } else {
-                // User is signed out.
-                if (unsubscribeUser) unsubscribeUser();
-                if (unsubscribeNotifications) unsubscribeNotifications();
-                currentUserData = null;
-                isAdmin = false;
-                showPage('landing');
-            }
-            updateNavigation();
-        });
-
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const phone = document.getElementById('phone').value;
-            const address = document.getElementById('address').value;
-            const gender = document.querySelector('input[name="gender"]:checked')?.value;
-
-            if (!gender) {
-                showAlert('Please select a gender.', true);
-                return;
-            }
-            
-            const phoneRegex = /^\+92-\d{3}-\d{7}$/;
-            if (!phoneRegex.test(phone)) {
-                showAlert('Please enter phone number in format: +92-XXX-XXXXXXX', true);
-                return;
-            }
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                
-                // Store additional user data in Firestore
-                await setDoc(doc(db, "users", user.uid), {
-                    firstName,
-                    lastName,
-                    email,
-                    phone,
-                    address,
-                    gender,
-                    clicks: 0,
-                    role: 'user', // Default role
-                    createdAt: serverTimestamp()
-                });
-                
-                showAlert('Account created successfully!');
-                // onAuthStateChanged will handle redirecting to the main page
-            } catch (error) {
-                console.error("Sign up error: ", error);
-                showAlert(`Error: ${error.message}`, true);
+                window.location.replace('index.html');
             }
         });
 
-        signinForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signin-email').value;
-            const password = document.getElementById('signin-password').value;
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // onAuthStateChanged will handle the rest
-            } catch (error) {
-                console.error("Sign in error: ", error);
-                showAlert(`Error: ${error.message}`, true);
-            }
-        });
-
-        window.logout = async () => {
-            try {
-                await signOut(auth);
-                // onAuthStateChanged will handle UI changes
-            } catch (error) {
-                console.error("Logout error: ", error);
-                showAlert(`Error: ${error.message}`, true);
-            }
-        };
-
-        // --- MAIN USER FUNCTIONALITY ---
-        function loadMainPageData() {
-            if (!currentUserData) return;
-            
-            document.getElementById('welcome-message').textContent = `Hi ${currentUserData.firstName}, you are ready to do your work!`;
-            
-            const shortLinksContainer = document.getElementById('short-links');
-            shortLinksContainer.innerHTML = '<p class="text-gray-500">Loading links...</p>';
-
-            // Listen for changes to main links
-            const q = query(collection(db, "mainLinks"));
-            onSnapshot(q, (querySnapshot) => {
-                shortLinksContainer.innerHTML = '';
-                if (querySnapshot.empty) {
-                    shortLinksContainer.innerHTML = '<p class="text-gray-500">No links available from admin yet.</p>';
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const link = { id: doc.id, ...doc.data() };
-                    const shortCode = `${link.id.substring(0, 4)}-${currentUserData.id.substring(0, 4)}`;
-                    const fullShortLink = `autosystem.com/${shortCode}`; // This is a display link
-                    const linkElement = document.createElement('div');
-                    linkElement.className = 'p-4 bg-gray-100 rounded-lg flex justify-between items-center';
-                    linkElement.innerHTML = `
-                        <span class="font-mono text-blue-600">${fullShortLink}</span>
-                        <button onclick="copyToClipboard('${fullShortLink}')" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">Copy</button>
-                    `;
-                    shortLinksContainer.appendChild(linkElement);
-                });
-            });
-        }
-
-        window.copyToClipboard = (text) => {
-            // Use the older execCommand for broader compatibility in iFrames
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showAlert('Link copied to clipboard!');
-            } catch (err) {
-                showAlert('Failed to copy text.', true);
-            }
-            document.body.removeChild(textArea);
-        };
-
-        window.submitWork = async () => {
-            const workLink = document.getElementById('work-link').value;
-            if (!workLink.trim()) {
-                showAlert('Please enter a link.', true);
-                return;
-            }
-            if (!workLink.includes('drive.google.com') && !workLink.includes('docs.google.com')) {
-                showAlert('Please enter a valid Google Drive shareable link.', true);
-                return;
-            }
-            
-            try {
-                await addDoc(collection(db, "workSubmissions"), {
-                    userId: auth.currentUser.uid,
-                    userEmail: currentUserData.email,
-                    link: workLink,
-                    submittedAt: serverTimestamp()
-                });
-                showAlert('Work submitted successfully!');
-                document.getElementById('work-link').value = '';
-            } catch (error) {
-                console.error("Error submitting work: ", error);
-                showAlert(`Error: ${error.message}`, true);
-            }
-        };
-
-        window.sendIssue = async () => {
-            const issueText = document.getElementById('issue-text').value;
-            if (!issueText.trim()) {
-                showAlert('Please describe your issue.', true);
-                return;
-            }
-            
-            try {
-                await addDoc(collection(db, "issues"), {
-                    userId: auth.currentUser.uid,
-                    userEmail: currentUserData.email,
-                    message: issueText,
-                    timestamp: serverTimestamp()
-                });
-                showAlert('Issue sent to admin successfully!');
-                document.getElementById('issue-text').value = '';
-            } catch (error) {
-                console.error("Error sending issue: ", error);
-                showAlert(`Error: ${error.message}`, true);
-            }
-        };
-
-        // --- DASHBOARD ---
-        function loadDashboardData() {
-            if (!currentUserData) return;
-            
-            document.getElementById('total-clicks').textContent = currentUserData.clicks || 0;
-            
-            updateTierProgress('starter', currentUserData.clicks, 10);
-            updateTierProgress('bronze', currentUserData.clicks, 7500);
-            updateTierProgress('silver', currentUserData.clicks, 15000);
-            updateTierProgress('gold', currentUserData.clicks, 50000);
-            updateTierProgress('diamond', currentUserData.clicks, 100000);
-        }
-
-        function updateTierProgress(tier, current, target) {
-            const progress = Math.min((current / target) * 100, 100);
-            const progressBar = document.getElementById(`${tier}-progress`);
-            const currentSpan = document.getElementById(`${tier}-current`);
-            const claimButton = document.getElementById(`${tier}-claim`);
-            
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (currentSpan) currentSpan.textContent = current;
-            
-            if (claimButton) {
-                if (current >= target) {
-                    claimButton.disabled = false;
-                    claimButton.className = claimButton.className.replace('bg-gray-400', 'bg-green-500 hover:bg-green-600');
-                } else {
-                    claimButton.disabled = true;
-                    claimButton.className = claimButton.className.replace(/bg-green-500\shover:bg-green-600/g, 'bg-gray-400');
-                }
-            }
-        }
-
-        window.claimReward = (tier) => {
-            showAlert(`Congratulations! You've claimed your ${tier} tier reward! This is a demo; an admin will verify and process your payment.`);
-            // In a real app, this would trigger a Firestore document update for admin review.
-        };
-
-        // --- NOTIFICATIONS ---
-        function listenForNotifications(userId) {
-            if (unsubscribeNotifications) unsubscribeNotifications(); // Detach previous listener
-
-            const notificationsList = document.getElementById('notifications-list');
-            const q = query(collection(db, "notifications"));
-
-            unsubscribeNotifications = onSnapshot(q, (querySnapshot) => {
-                notificationsList.innerHTML = '';
-                const userNotifications = [];
-                querySnapshot.forEach((doc) => {
-                    const notification = { id: doc.id, ...doc.data() };
-                    // Check if notification is for all users or this specific user
-                    if (notification.target === 'all' || notification.targetId === userId) {
-                        userNotifications.push(notification);
+        // --- Realtime Data Listener ---
+        function listenToUserData(userId) {
+            const userRef = ref(db, 'users/' + userId);
+            onValue(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    userData = snapshot.val();
+                    // Update UI elements that depend on user data
+                    navUsername.textContent = userData.firstName;
+                    document.getElementById('user-menu').classList.remove('hidden');
+                    // Pre-fill settings forms
+                    if (document.getElementById('profile-phone')) {
+                        document.getElementById('profile-phone').value = userData.phone || '';
+                        document.getElementById('profile-address').value = userData.address || '';
                     }
-                });
-
-                if (userNotifications.length === 0) {
-                    notificationsList.innerHTML = '<div class="text-center text-gray-500 py-8">No notifications yet</div>';
-                    return;
+                    // Load notifications
+                    loadNotifications(userId, userData.notifications || {});
                 }
-
-                // Sort by timestamp descending
-                userNotifications.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-                userNotifications.forEach(notification => {
-                    const notificationElement = document.createElement('div');
-                    notificationElement.className = 'bg-white rounded-lg shadow p-6';
-                    notificationElement.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-semibold text-lg">Admin Message</h4>
-                            <span class="text-sm text-gray-500">${notification.timestamp.toDate().toLocaleDateString()}</span>
-                        </div>
-                        <p class="text-gray-700">${notification.message}</p>
-                    `;
-                    notificationsList.appendChild(notificationElement);
-                });
             });
         }
+        
+        // --- Settings Page Logic ---
+        updateProfileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('profile-phone').value.trim();
+            const address = document.getElementById('profile-address').value.trim();
+            
+            const phoneRegex = /^(?:\+92|0)3[0-9]{2}[0-9]{7}$/;
+            if (!phoneRegex.test(phone)) {
+                showToast("Please enter a valid Pakistani phone number.", "error");
+                return;
+            }
 
-        // --- SETTINGS ---
+            try {
+                const userRef = ref(db, `users/${currentUserId}`);
+                await update(userRef, { phone, address });
+                showToast("Profile updated successfully!", "success");
+            } catch (error) {
+                console.error("Profile update error:", error);
+                showToast("Failed to update profile.", "error");
+            }
+        });
+
         changePasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const currentPassword = document.getElementById('current-password').value;
             const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            
-            if (newPassword !== confirmPassword) {
-                showAlert('New passwords do not match!', true);
+
+            if (newPassword.length < 6) {
+                showToast("New password must be at least 6 characters.", "error");
                 return;
             }
 
@@ -1147,207 +303,104 @@
             const credential = EmailAuthProvider.credential(user.email, currentPassword);
 
             try {
-                // Re-authenticate the user before changing password for security
                 await reauthenticateWithCredential(user, credential);
                 await updatePassword(user, newPassword);
-                showAlert('Password changed successfully!');
+                showToast("Password updated successfully!", "success");
                 changePasswordForm.reset();
             } catch (error) {
-                console.error("Password change error: ", error);
-                showAlert(`Error: ${error.message}`, true);
+                console.error("Password change error:", error);
+                showToast("Failed to update password. Check your current password.", "error");
             }
         });
 
-        // --- CAREER PAGE ---
-        careerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = {
-                name: document.getElementById('career-name').value,
-                email: document.getElementById('career-email').value,
-                education: document.getElementById('education').value,
-                experience: document.getElementById('experience').value,
-                skills: document.getElementById('skills').value,
-                submittedAt: serverTimestamp()
-            };
-            
-            try {
-                await addDoc(collection(db, "careerApplications"), formData);
-                showAlert('Application submitted successfully!');
-                careerForm.reset();
-            } catch (error) {
-                console.error("Career submission error: ", error);
-                showAlert(`Error: ${error.message}`, true);
-            }
-        });
+        // --- Notifications Page Logic ---
+        async function loadNotifications(userId, userNotifications) {
+            const broadcastRef = ref(db, 'notifications');
+            const broadcastSnapshot = await get(broadcastRef);
+            let allNotifications = [];
 
-        // --- ADMIN PANEL ---
-        const ADMIN_EMAIL = "admin@autosystem.com"; // Hardcoded admin email for login check
-
-        adminLoginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('admin-email').value;
-            const password = document.getElementById('admin-password').value;
-
-            if (email !== ADMIN_EMAIL) {
-                showAlert('This email is not registered as an admin.', true);
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // onAuthStateChanged will check if the user has an 'admin' role and redirect.
-            } catch (error) {
-                showAlert(`Admin login failed: ${error.message}`, true);
-            }
-        });
-
-        window.showAdminSection = (sectionId, event) => {
-            document.querySelectorAll('.admin-section').forEach(section => section.classList.add('hidden'));
-            document.getElementById(`admin-${sectionId}`).classList.remove('hidden');
-            
-            document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.style.backgroundColor = 'transparent');
-            if(event && event.target) {
-                event.target.style.backgroundColor = 'rgba(16, 239, 82, 0.1)';
-            }
-            
-            loadAdminSectionData(sectionId);
-        };
-
-        function loadAdminSectionData(sectionId) {
-            switch(sectionId) {
-                case 'user-details': loadUsersTable(); break;
-                case 'user-resumes': loadUserResumes(); break;
-                case 'manage-links': loadMainLinks(); break;
-                case 'user-workings': loadUserWorkings(); break;
-                case 'notifications': loadReceivedIssues(); break;
-                case 'total-clicks': loadTotalClicksData(); break;
-            }
-        }
-
-        async function loadUsersTable() {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">Loading users...</td></tr>';
-            const usersCol = collection(db, "users");
-            const userSnapshot = await getDocs(usersCol);
-            tbody.innerHTML = '';
-            userSnapshot.forEach(doc => {
-                const user = doc.data();
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="border border-gray-300 p-3">${user.firstName}</td>
-                    <td class="border border-gray-300 p-3">${user.lastName}</td>
-                    <td class="border border-gray-300 p-3">${user.email}</td>
-                    <td class="border border-gray-300 p-3">${user.phone}</td>
-                    <td class="border border-gray-300 p-3">${user.address}</td>
-                    <td class="border border-gray-300 p-3">${user.gender}</td>
-                    <td class="border border-gray-300 p-3">${user.clicks || 0}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        window.addMainLink = async () => {
-            const newLink = document.getElementById('new-main-link').value;
-            if (!newLink.trim()) {
-                showAlert('Please enter a valid URL', true);
-                return;
-            }
-            try {
-                await addDoc(collection(db, "mainLinks"), {
-                    url: newLink,
-                    createdAt: serverTimestamp()
-                });
-                showAlert('Link added successfully!');
-                document.getElementById('new-main-link').value = '';
-                loadMainLinks();
-            } catch (error) {
-                showAlert(`Error adding link: ${error.message}`, true);
-            }
-        };
-
-        function loadMainLinks() {
-            const linksList = document.getElementById('main-links-list');
-            linksList.innerHTML = '<p>Loading links...</p>';
-            const q = query(collection(db, "mainLinks"));
-            onSnapshot(q, (querySnapshot) => {
-                linksList.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const link = { id: doc.id, ...doc.data() };
-                    const linkElement = document.createElement('div');
-                    linkElement.className = 'bg-gray-50 rounded-lg p-4 flex justify-between items-center';
-                    linkElement.innerHTML = `
-                        <p class="font-semibold break-all">${link.url}</p>
-                        <button onclick="removeMainLink('${link.id}')" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">Remove</button>
-                    `;
-                    linksList.appendChild(linkElement);
-                });
-            });
-        }
-        
-        window.removeMainLink = async (linkId) => {
-            // A non-blocking confirmation would be better, but this is simpler for now.
-            if (window.confirm('Are you sure you want to remove this link?')) {
-                try {
-                    await deleteDoc(doc(db, "mainLinks", linkId));
-                    showAlert('Link removed successfully!');
-                } catch (error) {
-                    showAlert(`Error removing link: ${error.message}`, true);
-                }
-            }
-        };
-
-        window.sendNotification = async () => {
-            const type = document.querySelector('input[name="notification-type"]:checked').value;
-            const specificUserEmail = document.getElementById('specific-user-email').value;
-            const message = document.getElementById('notification-message').value;
-
-            if (!message.trim()) {
-                showAlert('Please enter a notification message', true);
-                return;
-            }
-
-            let targetId = null;
-            if (type === 'specific') {
-                if (!specificUserEmail.trim()) {
-                    showAlert('Please enter a user email for specific notification', true);
-                    return;
-                }
-                // In a real app, you'd query for the user's UID based on their email.
-                // This is a simplified approach.
-                showAlert("Sending to a specific user by email requires a backend function to look up the UID. For this demo, we'll send to all.", true);
-                return; // Prevent sending specific for now
-            }
-
-            try {
-                await addDoc(collection(db, "notifications"), {
-                    target: 'all', // Simplified to 'all'
-                    targetId: null,
-                    message: message,
-                    timestamp: serverTimestamp()
-                });
-                showAlert('Notification sent to all users!');
-                document.getElementById('notification-message').value = '';
-            } catch (error) {
-                showAlert(`Error sending notification: ${error.message}`, true);
-            }
-        };
-
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            showPage('landing');
-            
-            // Event listener for notification type radio buttons
-            document.querySelectorAll('input[name="notification-type"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const specificUserInput = document.getElementById('specific-user-email');
-                    specificUserInput.disabled = this.value === 'all';
-                    if (this.value === 'all') {
-                        specificUserInput.value = '';
+            // Get broadcast notifications
+            if (broadcastSnapshot.exists()) {
+                broadcastSnapshot.forEach(childSnapshot => {
+                    const notif = { id: childSnapshot.key, ...childSnapshot.val() };
+                    if (notif.targetUser === 'all') {
+                        allNotifications.push({ ...notif, isRead: userNotifications[notif.id]?.read || false });
                     }
                 });
+            }
+
+            // Get personal notifications (assuming they are stored directly under user)
+            // In a more robust system, you'd fetch these from a central /notifications node too
+            // For now, this structure matches the prompt's implied schema
+            
+            // Sort by timestamp descending
+            allNotifications.sort((a, b) => b.timestamp - a.timestamp);
+
+            renderNotifications(allNotifications);
+        }
+
+        function renderNotifications(notifications) {
+            notificationsContainer.innerHTML = '';
+            if (notifications.length === 0) {
+                notificationsContainer.innerHTML = '<p class="text-gray-500">You have no notifications.</p>';
+                return;
+            }
+
+            notifications.forEach(notif => {
+                const isUnread = !notif.isRead;
+                const date = new Date(notif.timestamp).toLocaleString();
+
+                const notifElement = document.createElement('div');
+                notifElement.className = `timeline-item cursor-pointer ${isUnread ? 'unread' : ''}`;
+                notifElement.dataset.id = notif.id;
+                notifElement.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="text-sm text-gray-500">${date}</div>
+                    <p class="text-gray-800">${notif.message}</p>
+                `;
+                
+                notifElement.addEventListener('click', () => markNotificationAsRead(notif.id));
+                notificationsContainer.appendChild(notifElement);
             });
+        }
+
+        async function markNotificationAsRead(notificationId) {
+            const notifRef = ref(db, `users/${currentUserId}/notifications/${notificationId}`);
+            try {
+                await set(notifRef, { read: true });
+                // The onValue listener will automatically re-render the UI
+            } catch (error) {
+                console.error("Error marking notification as read:", error);
+            }
+        }
+
+        // --- Logout Logic ---
+        function handleLogout() {
+            signOut(auth).catch(error => console.error("Logout Error:", error));
+        }
+        logoutBtn.addEventListener('click', handleLogout);
+        navLogoutBtn.addEventListener('click', handleLogout);
+
+        // --- UI Interactions ---
+        userMenuButton.addEventListener('click', () => {
+            userMenuDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e) => {
+            if (!userMenu.contains(e.target)) {
+                userMenuDropdown.classList.add('hidden');
+            }
         });
 
+        // --- Toast Notification Logic ---
+        function showToast(message, type = 'success') {
+            toastEl.textContent = message;
+            toastEl.className = '';
+            toastEl.classList.add('show', type);
+            setTimeout(() => toastEl.classList.remove('show'), 3000);
+        }
+
+        // --- Simple Client-Side Router (from previous parts) ---
+        // This part needs to be present to handle page switching
     </script>
 </body>
 </html>
